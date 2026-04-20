@@ -82,8 +82,8 @@ checkpointing:
   save_optimizer: true
 
 policy:
-  # Use Nemotron-3-Nano-30B base model
-  model_name: "nvidia/Nemotron-3-Nano-30B-A3B-FP8"
+  # Use Qwen model from local cache
+  model_name: "Qwen/Qwen3.5-9B"
   tokenizer:
     name: ${policy.model_name}
     chat_template_kwargs: null

@@ -37,9 +37,11 @@ from nemo_rl.utils.config import (
     parse_hydra_overrides,
     register_omegaconf_resolvers,
 )
+from nemo_rl.environments.utils import register_env
 from nemo_rl.utils.logger import get_next_experiment_dir
 
 # Import custom modules
+from nemo_reasoning.environment import NemoReasoningEnvironment
 from nemo_reasoning.dataset import (
     NemotronReasoningDataset,
     nemo_reasoning_hf_data_processor,
@@ -110,6 +112,9 @@ def main():
     print(f"📊 Using log directory: {config['logger']['log_dir']}")
     if config["checkpointing"]["enabled"]:
         print(f"📊 Using checkpoint directory: {config['checkpointing']['checkpoint_dir']}")
+
+    # Register nemo_reasoning environment
+    register_env("nemo_reasoning", "nemo_reasoning.environment.NemoReasoningEnvironment")
 
     # Initialize Ray
     init_ray()
