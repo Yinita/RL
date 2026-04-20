@@ -1,0 +1,5 @@
+{input}
+
+Think step by step to solve this problem. Show your reasoning process clearly.
+
+Put your final answer inside \boxed{}.
