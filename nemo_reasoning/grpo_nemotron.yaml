@@ -292,7 +292,7 @@ data:
 
   train:
     dataset_name: NemotronReasoningDataset
-    data_path: "c:/Users/06/Desktop/codes/nemo/data/final_Nemotron_training_data.csv"
+    data_path: "C:/Users/06/Desktop/codes/nemo/RL/data/final_Nemotron_training_data.csv"
     split_validation_size: 0.1  # 10% for validation
     seed: ${grpo.seed}
   validation: null
