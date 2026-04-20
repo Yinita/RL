@@ -49,6 +49,12 @@ wandb login --verify 7f885b3993e38c9c390b4c6919e1b256caab13d0
 ```bash
 cd /work1/yt/RL
 
+# Clone repository
+git clone git@github.com:Yinita/RL.git
+
+# Upload data directory to cluster
+# scp -r data/ user@cluster:/work1/yt/RL/
+
 # Update paths in slurm/env_setup.sh:
 # - WORK1: Your work directory
 # - PROJECT_DIR: /work1/yt/RL
