@@ -5,23 +5,23 @@ This directory contains scripts for training and evaluating a Nemotron-3-Nano-30
 ## Project Structure
 
 ```
-nemo/
-├── RL/                      # NeMo-RL repository
-│   └── nemo_reasoning/
-│       ├── __init__.py              # Package initialization
-│       ├── dataset.py               # Custom dataset processor
-│       ├── reward.py                # Reward function for evaluation
-│       ├── grpo_nemotron.yaml       # GRPO configuration
-│       ├── train_grpo.py            # Training script
-│       ├── evaluate.py              # Evaluation script
-│       ├── prompts/
-│       │   └── default.txt          # Default prompt template
-│       └── README.md                # This file
+RL/
+├── nemo_reasoning/          # Custom Nemotron training scripts
+│   ├── __init__.py              # Package initialization
+│   ├── dataset.py               # Custom dataset processor
+│   ├── reward.py                # Reward function for evaluation
+│   ├── grpo_nemotron.yaml       # GRPO configuration
+│   ├── train_grpo.py            # Training script
+│   ├── evaluate.py              # Evaluation script
+│   ├── prompts/
+│   │   └── default.txt          # Default prompt template
+│   └── README.md                # This file
 ├── slurm/                   # Slurm submission scripts
-│   ├── env_setup.sh         # Environment setup (sourced by sbatch scripts)
+│   ├── env_setup.sh         # Environment setup (sourced by sbatch)
 │   └── train_grpo.sh        # GRPO training job submission
-└── scripts/
-    └── setup_conda_env.sh   # Local conda environment setup
+├── data/                    # Training data
+│   └── final_Nemotron_training_data.csv
+└── README.md                # NeMo-RL repository README
 ```
 
 ## Setup
@@ -29,30 +29,30 @@ nemo/
 ### Option 1: Local Development with Conda
 
 ```bash
-cd c:\Users\06\Desktop\codes\nemo
+cd RL
 
 # Setup conda environment named 'rl'
-bash scripts/setup_conda_env.sh
-
-# Activate environment
+conda create -n rl python=3.10 -y
 conda activate rl
 
-# Update data path in RL/nemo_reasoning/grpo_nemotron.yaml
-# data_path: "c:/Users/06/Desktop/codes/nemo/data/final_Nemotron_training_data.csv"
+# Install dependencies
+pip install -e ".[vllm,gpu]"
+pip install pandas scikit-learn peat
+pip install wandb
+
+# Login to WandB
+wandb login --verify 7f885b3993e38c9c390b4c6919e1b256caab13d0
 ```
 
 ### Option 2: Slurm Cluster
 
 ```bash
-cd /work1/yt/nemo
+cd /work1/yt/RL
 
 # Update paths in slurm/env_setup.sh:
 # - WORK1: Your work directory
-# - PROJECT_DIR: Project directory
+# - PROJECT_DIR: /work1/yt/RL
 # - Conda path: Your conda installation
-
-# Update data path in slurm/train_grpo.sh:
-# DATA_PATH="/work1/yt/nemo/data/final_Nemotron_training_data.csv"
 
 # Submit job
 sbatch slurm/train_grpo.sh
@@ -63,20 +63,19 @@ sbatch slurm/train_grpo.sh
 ### Option 1: Slurm (Recommended for Cluster)
 
 ```bash
-cd /work1/yt/nemo
+cd /work1/yt/RL
 sbatch slurm/train_grpo.sh
 ```
 
 ### Option 2: Local/Interactive
 
 ```bash
-cd c:\Users\06\Desktop\codes\nemo
-conda activate rl
 cd RL
+conda activate rl
 
 python nemo_reasoning/train_grpo.py \
     --config nemo_reasoning/grpo_nemotron.yaml \
-    --data_path c:/Users/06/Desktop/codes/nemo/data/final_Nemotron_training_data.csv \
+    --data_path data/final_Nemotron_training_data.csv \
     --output_dir results/nemo_reasoning_rl
 ```
 
@@ -106,14 +105,13 @@ Training uses more aggressive parameters for exploration, while evaluation uses 
 ## Evaluation
 
 ```bash
-cd c:\Users\06\Desktop\codes\nemo
-conda activate rl
 cd RL
+conda activate rl
 
 python nemo_reasoning/evaluate.py \
     --model_path results/nemo_reasoning_rl/checkpoints/best_model \
     --base_model nvidia/Nemotron-3-Nano-30B-A3B-FP8 \
-    --data_path c:/Users/06/Desktop/codes/nemo/data/final_Nemotron_training_data.csv \
+    --data_path data/final_Nemotron_training_data.csv \
     --output_dir results/evaluation \
     --use_lora \
     --batch_size 8

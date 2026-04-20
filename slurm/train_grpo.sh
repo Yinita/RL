@@ -15,7 +15,7 @@
 # ============================================================
 
 source "$(dirname "$0")/env_setup.sh"
-cd "$PROJECT_DIR/RL"
+cd "$PROJECT_DIR"
 
 echo "=== Nemotron RL GRPO Training ==="
 echo "Job $SLURM_JOB_ID on $(hostname) at $(date)"
