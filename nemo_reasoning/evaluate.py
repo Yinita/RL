@@ -71,19 +71,19 @@ def parse_args():
         "--max_new_tokens",
         type=int,
         default=7680,
-        help="Maximum number of tokens to generate",
+        help="Maximum number of tokens to generate (competition requirement: 7680)",
     )
     parser.add_argument(
         "--temperature",
         type=float,
         default=0.0,
-        help="Generation temperature",
+        help="Generation temperature (competition requirement: 0.0)",
     )
     parser.add_argument(
         "--top_p",
         type=float,
         default=1.0,
-        help="Generation top_p",
+        help="Generation top_p (competition requirement: 1.0)",
     )
     parser.add_argument(
         "--use_lora",
@@ -270,7 +270,8 @@ def main():
     
     # Evaluate
     print("Evaluating predictions...")
-    reward_fn = NemotronReasoningReward()
+    # Disable token compression for evaluation (use competition parameters only)
+    reward_fn = NemotronReasoningReward(token_compression_enabled=False)
     results = evaluate(predictions, ground_truths, reward_fn)
     
     # Print results

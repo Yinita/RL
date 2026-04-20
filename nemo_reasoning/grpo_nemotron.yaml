@@ -20,11 +20,17 @@ grpo:
   dynamic_sampling_max_gen_batches: 10
   batch_multiplier: 1
   reward_shaping:
-    enabled: false
+    enabled: true  # Enable token compression reward
     overlong_buffer_length: 128
-    overlong_buffer_penalty: 1
-    max_response_length: ${policy.max_total_sequence_length}
+    overlong_buffer_penalty: 0.1  # Mild penalty for overlong responses
+    max_response_length: 7680  # Target length (competition requirement)
     stop_properly_penalty_coef: null
+    # Token compression parameters
+    token_compression:
+      enabled: true
+      target_length: 7680  # Competition target
+      compression_weight: 0.05  # Low weight to minimize impact on accuracy
+      compression_type: "linear"  # Linear penalty for excess tokens
 
   adv_estimator:
     name: "grpo"
@@ -86,7 +92,7 @@ policy:
   train_micro_batch_size: 8
   generation_batch_size: 64
   logprob_batch_size: ${policy.train_micro_batch_size}
-  max_total_sequence_length: 8192
+  max_total_sequence_length: 24576  # Increased for training (20000 + prompt)
   precision: "bfloat16"
   logprob_chunk_size: null
   offload_optimizer_for_logprob: false
@@ -242,9 +248,9 @@ policy:
 
   generation:
     backend: "vllm"
-    max_new_tokens: 7680  # Competition requirement
-    temperature: 0.0  # Competition requirement
-    top_p: 1.0  # Competition requirement
+    max_new_tokens: 20000  # Training: allow longer generation for exploration
+    temperature: 1.0  # Training: higher temperature for diversity
+    top_p: 0.9  # Training: nucleus sampling for exploration
     top_k: null
     stop_token_ids: null
     stop_strings: null
@@ -255,7 +261,7 @@ policy:
       use_cuda_graphs_for_non_decode_steps: true
       enable_chunked_prefill: true
       unified_memory_level: 0
-      max_tokens: 8192
+      max_tokens: 24576  # Increased for training
     vllm_cfg:
       async_engine: false
       precision: ${policy.precision}
@@ -264,7 +270,7 @@ policy:
       pipeline_parallel_size: 1
       expert_parallel_size: 1
       gpu_memory_utilization: 0.85  # Competition requirement
-      max_model_len: 8192  # Competition requirement
+      max_model_len: 24576  # Increased for training (20000 + prompt)
       enforce_eager: False
       use_deep_gemm: False
       num_last_layers_in_bf16: 0
@@ -300,6 +306,12 @@ env:
   nemo_reasoning:
     num_workers: 8
     reward_fn: "nemo_reasoning_reward_fn"
+    # Token compression configuration
+    token_compression:
+      enabled: true
+      target_length: 7680
+      compression_weight: 0.05
+      min_accuracy_threshold: 0.8  # Don't penalize if accuracy is above this
 
 logger:
   log_dir: "logs/nemo_reasoning_rl"

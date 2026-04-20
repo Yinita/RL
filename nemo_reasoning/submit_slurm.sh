@@ -37,7 +37,7 @@ python nemo_reasoning/train_grpo.py \
     --output_dir results/nemo_reasoning_rl \
     2>&1 | tee logs/train_$SLURM_JOB_ID.log
 
-# Run evaluation on validation set
+# Run evaluation on validation set with COMPETITION PARAMETERS
 python nemo_reasoning/evaluate.py \
     --model_path results/nemo_reasoning_rl/checkpoints/best_model \
     --base_model nvidia/Nemotron-3-Nano-30B-A3B-FP8 \

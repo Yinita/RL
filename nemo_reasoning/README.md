@@ -61,15 +61,26 @@ python nemo_reasoning/train_grpo.py \
 
 ## Configuration
 
+### Training Parameters (for exploration)
 Key parameters in `grpo_nemotron.yaml`:
 
 - **LoRA rank**: 32 (maximum allowed by competition)
 - **Batch size**: 1024 global, 8 micro
 - **Generation**: 64 prompts/step, 16 generations/prompt
+- **Max tokens**: 20000 (training: allow longer generation for exploration)
+- **Temperature**: 1.0 (training: higher temperature for diversity)
+- **Top-p**: 0.9 (training: nucleus sampling for exploration)
+- **GPU memory**: 0.85 utilization (competition requirement)
+- **Token compression**: Enabled with weight 0.05 (mild penalty for overlong responses)
+
+### Evaluation Parameters (for competition)
+The evaluation script uses competition-compliant parameters:
+
 - **Max tokens**: 7680 (competition requirement)
 - **Temperature**: 0.0 (competition requirement)
 - **Top-p**: 1.0 (competition requirement)
-- **GPU memory**: 0.85 utilization (competition requirement)
+
+Training uses more aggressive parameters for exploration, while evaluation uses strict competition parameters for final scoring.
 
 ## Evaluation
 
@@ -95,6 +106,17 @@ The reward function evaluates answers based on:
 1. Exact string match
 2. Numerical tolerance (10^-2 relative tolerance)
 3. Case-insensitive string comparison
+4. **Token compression penalty** (during training only)
+
+### Token Compression
+During training, a mild penalty is applied to encourage concise responses:
+- **Target length**: 7680 tokens (competition requirement)
+- **Compression weight**: 0.05 (low weight to minimize impact on accuracy)
+- **Minimum accuracy threshold**: 0.8 (penalty only applied if answer is correct enough)
+- **Penalty formula**: Linear reduction based on excess tokens
+- **Minimum reward**: 0.5 (to avoid excessive penalty)
+
+This encourages the model to learn concise reasoning without significantly hurting accuracy. During evaluation, token compression is disabled, and only accuracy is measured.
 
 Answers must be in `\boxed{}` format for optimal evaluation.
 

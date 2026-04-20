@@ -27,10 +27,22 @@ class NemotronReasoningReward:
     Evaluates correctness of generated answers based on:
     1. Exact string match
     2. Numerical tolerance (10^-2 relative tolerance)
+    3. Token compression (penalty for overlong responses)
     """
 
-    def __init__(self, relative_tolerance: float = 1e-2):
+    def __init__(
+        self,
+        relative_tolerance: float = 1e-2,
+        token_compression_enabled: bool = False,
+        target_length: int = 7680,
+        compression_weight: float = 0.05,
+        min_accuracy_threshold: float = 0.8,
+    ):
         self.relative_tolerance = relative_tolerance
+        self.token_compression_enabled = token_compression_enabled
+        self.target_length = target_length
+        self.compression_weight = compression_weight
+        self.min_accuracy_threshold = min_accuracy_threshold
 
     def extract_answer(self, text: str) -> str:
         """
@@ -96,25 +108,41 @@ class NemotronReasoningReward:
         """
         Compute reward for a prediction
         
-        Returns 1.0 if correct, 0.0 otherwise
+        Returns 1.0 if correct, 0.0 otherwise, with optional token compression penalty
         """
         pred_answer = self.extract_answer(prediction)
         gt_answer = ground_truth.strip()
         
+        # Compute base accuracy reward
+        base_reward = 0.0
+        
         # Try exact string match first
         if self.compare_string(pred_answer, gt_answer):
-            return 1.0
-        
+            base_reward = 1.0
         # Try numeric comparison if both are numeric
-        if self.is_numeric(pred_answer) and self.is_numeric(gt_answer):
+        elif self.is_numeric(pred_answer) and self.is_numeric(gt_answer):
             if self.compare_numeric(pred_answer, gt_answer):
-                return 1.0
-        
+                base_reward = 1.0
         # Try case-insensitive string comparison
-        if pred_answer.lower() == gt_answer.lower():
-            return 1.0
+        elif pred_answer.lower() == gt_answer.lower():
+            base_reward = 1.0
         
-        return 0.0
+        # Apply token compression penalty if enabled
+        if self.token_compression_enabled:
+            # Only apply penalty if base_reward is high enough (to avoid hurting accuracy)
+            if base_reward >= self.min_accuracy_threshold:
+                # Estimate token count (rough approximation: characters / 4)
+                estimated_tokens = len(prediction) / 4
+                excess_tokens = max(0, estimated_tokens - self.target_length)
+                
+                # Linear penalty: reduce reward proportionally to excess tokens
+                # Penalty = compression_weight * (excess / target_length)
+                penalty_factor = 1.0 - (self.compression_weight * excess_tokens / self.target_length)
+                penalty_factor = max(0.5, penalty_factor)  # Don't reduce reward below 0.5
+                
+                base_reward = base_reward * penalty_factor
+        
+        return base_reward
 
     def batch_compute_rewards(
         self, predictions: List[str], ground_truths: List[str]
@@ -153,6 +181,10 @@ class NemotronReasoningReward:
 def nemo_reasoning_reward_fn(
     responses: List[str],
     ground_truths: List[str],
+    token_compression_enabled: bool = False,
+    target_length: int = 7680,
+    compression_weight: float = 0.05,
+    min_accuracy_threshold: float = 0.8,
     **kwargs,
 ) -> List[float]:
     """
@@ -161,10 +193,19 @@ def nemo_reasoning_reward_fn(
     Args:
         responses: List of model responses
         ground_truths: List of ground truth answers
+        token_compression_enabled: Whether to enable token compression
+        target_length: Target token length for compression
+        compression_weight: Weight for compression penalty
+        min_accuracy_threshold: Minimum accuracy to apply penalty
         **kwargs: Additional arguments
     
     Returns:
         List of reward values
     """
-    reward_fn = NemotronReasoningReward()
+    reward_fn = NemotronReasoningReward(
+        token_compression_enabled=token_compression_enabled,
+        target_length=target_length,
+        compression_weight=compression_weight,
+        min_accuracy_threshold=min_accuracy_threshold,
+    )
     return reward_fn.batch_compute_rewards(responses, ground_truths)
